@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Select Address | HandBuddyy</title>
+  <link rel="stylesheet" href="./css/global.css">
+  <style>
+    .address-card {
+      border: 1px solid var(--border-color);
+      padding: 16px;
+      border-radius: var(--radius-md);
+      margin-bottom: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .address-card:hover {
+      border-color: var(--primary-color);
+    }
+    .address-card.selected {
+      border-color: var(--primary-color);
+      background-color: rgba(15, 23, 42, 0.03);
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="container nav-container">
+      <a href="index.html" class="brand-logo">HandBuddyy</a>
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="shop.html" class="nav-link">Shop Bags</a></li>
+        <li><a href="login.html" class="nav-link">Login</a></li>
+        <li>
+          <a href="cart.html" class="btn btn-primary" style="padding: 8px 16px">
+            Cart <span class="cart-badge" id="nav-cart-count">0</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="section">
+    <div class="container" style="max-width: 600px;">
+      <h2 style="margin-bottom: 24px;">Select Delivery Address</h2>
+      
+      <!-- Existing Addresses -->
+      <div id="address-list">
+        <!-- populated via JS -->
+      </div>
+
+      <button onclick="continueToCheckout()" id="continue-btn" class="btn btn-primary btn-block" style="margin-top: 24px; padding: 16px; font-size: 1.125rem;" disabled>
+        Select Address to Continue
+      </button>
+
+      <hr style="margin: 40px 0; border: 0; border-top: 1px solid var(--border-color);">
+
+      <!-- Add New Address -->
+      <div class="card" style="padding: 32px;">
+        <h3 style="margin-bottom: 24px;">Add New Address</h3>
+        <form id="addressForm" onsubmit="handleAddAddress(event)">
+          <div class="form-group" style="text-align: left;">
+            <label class="form-label">Full Name</label>
+            <input type="text" id="add-name" class="form-input" required>
+          </div>
+          <div class="form-group" style="text-align: left;">
+            <label class="form-label">Street exactly (Flat, Building, Street)</label>
+            <input type="text" id="add-street" class="form-input" required>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group" style="text-align: left;">
+              <label class="form-label">City</label>
+              <input type="text" id="add-city" class="form-input" required>
+            </div>
+            <div class="form-group" style="text-align: left;">
+              <label class="form-label">Pincode</label>
+              <input type="text" id="add-pin" class="form-input" required>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-outline btn-block" style="margin-top: 16px;">Save Address</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="./js/firebase-init.js"></script>
+  <script src="./js/main.js"></script>
+  <script>
+    let selectedAddressIndex = null;
+    let addresses = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const loggedInUser = localStorage.getItem('handbuddyy_user');
+      if (!loggedInUser) {
+        window.location.href = 'login.html';
+        return;
+      }
+      loadAddresses();
+    });
+
+    function loadAddresses() {
+      const user = localStorage.getItem('handbuddyy_user');
+      
+      const listEl = document.getElementById('address-list');
+      listEl.innerHTML = '<p style="color: var(--text-muted);">Loading addresses...</p>';
+
+      db.collection('users').doc(user).collection('addresses').get()
+        .then(snapshot => {
+          addresses = snapshot.docs.map(doc => doc.data());
+          
+          if (addresses.length === 0) {
+            listEl.innerHTML = '<p style="color: var(--text-muted); margin-bottom: 24px;">No saved addresses found. Please add a new one.</p>';
+            return;
+          }
+
+          listEl.innerHTML = addresses.map((addr, idx) => `
+            <div class="address-card" id="addr-card-${idx}" onclick="selectAddress(${idx})">
+              <div style="font-weight: 600; margin-bottom: 4px;">${addr.name}</div>
+              <div style="color: var(--text-muted); font-size: 0.875rem;">
+                ${addr.street}, ${addr.city} - ${addr.pin}
+              </div>
+            </div>
+          `).join('');
+        })
+        .catch(err => {
+          listEl.innerHTML = '<p style="color: red;">Error loading addresses.</p>';
+        });
+    }
+
+    function selectAddress(idx) {
+      selectedAddressIndex = idx;
+      
+      document.querySelectorAll('.address-card').forEach(card => card.classList.remove('selected'));
+      document.getElementById('addr-card-' + idx).classList.add('selected');
+      
+      const continueBtn = document.getElementById('continue-btn');
+      continueBtn.disabled = false;
+      continueBtn.textContent = 'Continue to Checkout';
+    }
+
+    function handleAddAddress(e) {
+      e.preventDefault();
+      const user = localStorage.getItem('handbuddyy_user');
+      const btn = e.target.querySelector('button[type="submit"]');
+      const oldText = btn.textContent;
+      btn.textContent = 'Saving...';
+      btn.disabled = true;
+      
+      const newAddr = {
+        name: document.getElementById('add-name').value,
+        street: document.getElementById('add-street').value,
+        city: document.getElementById('add-city').value,
+        pin: document.getElementById('add-pin').value
+      };
+
+      db.collection('users').doc(user).collection('addresses').add(newAddr)
+        .then(() => {
+          showToast('Address saved!', 'success');
+          document.getElementById('addressForm').reset();
+          btn.textContent = oldText;
+          btn.disabled = false;
+          loadAddresses();
+        })
+        .catch((err) => {
+          showToast('Error saving address: ' + err.message, 'error');
+          btn.textContent = oldText;
+          btn.disabled = false;
+        });
+    }
+
+    function continueToCheckout() {
+      if (selectedAddressIndex !== null) {
+        localStorage.setItem('handbuddyy_selected_address', JSON.stringify(addresses[selectedAddressIndex]));
+        window.location.href = 'checkout.html';
+      }
+    }
+  </script>
+</body>
+</html>
+

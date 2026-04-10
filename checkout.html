@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout | HandBuddyy</title>
+  <link rel="stylesheet" href="./css/global.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar" style="justify-content: center; display: flex;">
+    <a href="index.html" class="brand-logo">HandBuddyy Secure Checkout</a>
+  </nav>
+
+  <div class="section" style="min-height: 70vh; display: flex; align-items: center; justify-content: center;">
+    <div class="card" style="width: 100%; max-width: 500px; padding: 40px; text-align: center;">
+      <div style="width: 64px; height: 64px; background: #fef3c7; color: #d97706; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 24px; font-weight: bold;">
+        ₹
+      </div>
+      <h2 style="margin-bottom: 16px;">Payment Gateway Integration</h2>
+      <p style="color: var(--text-muted); margin-bottom: 24px;">This is a dummy payment page to demonstrate where Razorpay or Stripe integration would be implemented in a real production environment.</p>
+      
+      <div style="background: var(--bg-subtle); padding: 16px; border-radius: var(--radius-md); margin-bottom: 32px;">
+        <h3 style="font-size: 1rem; color: var(--secondary-color); margin-bottom: 8px;">Order Details</h3>
+        <div id="checkout-amount" style="font-size: 2rem; font-weight: 700; border-bottom: 1px solid var(--border-color); padding-bottom: 16px; margin-bottom: 16px; color: var(--primary-color);">₹0</div>
+        <div id="checkout-address" style="text-align: left; font-size: 0.875rem; color: var(--text-muted); line-height: 1.5;"></div>
+      </div>
+
+      <button onclick="processDummyPayment()" class="btn btn-primary btn-block" style="font-size: 1.125rem;">
+        Pay Now Securely
+      </button>
+      
+      <button onclick="window.history.back()" class="btn btn-outline btn-block" style="margin-top: 16px;">
+        Cancel & Return to Cart
+      </button>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="./js/firebase-init.js"></script>
+  <script src="./js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const loggedInUser = localStorage.getItem('handbuddyy_user');
+      if (!loggedInUser) {
+        window.location.href = 'login.html';
+        return;
+      }
+      
+      const selectedAddrStr = localStorage.getItem('handbuddyy_selected_address');
+      if (!selectedAddrStr) {
+        window.location.href = 'address.html';
+        return;
+      }
+
+      const total = cart.reduce((sum, item) => sum + (item.price * item.cartQty), 0);
+      document.getElementById('checkout-amount').textContent = formatPrice(total);
+      
+      const addr = JSON.parse(selectedAddrStr);
+      document.getElementById('checkout-address').innerHTML = `<strong style="color: var(--text-color);">Delivery to:</strong><br>${addr.name}<br>${addr.street}, ${addr.city} - ${addr.pin}`;
+      
+      if(total === 0) {
+        window.location.href = 'shop.html';
+      }
+    });
+
+    function processDummyPayment() {
+      const btn = document.querySelector('.btn-primary');
+      btn.textContent = 'Processing...';
+      btn.style.opacity = '0.7';
+      btn.disabled = true;
+      
+      setTimeout(() => {
+        const loggedInUser = localStorage.getItem('handbuddyy_user');
+        const selectedAddrStr = localStorage.getItem('handbuddyy_selected_address');
+        const total = cart.reduce((sum, item) => sum + (item.price * item.cartQty), 0);
+        
+        // Firebase Batch Update
+        const orderId = 'ORD' + Math.floor(Math.random() * 1000000);
+        const order = {
+          id: orderId,
+          user: loggedInUser,
+          address: JSON.parse(selectedAddrStr),
+          items: cart,
+          total: total,
+          date: new Date().toISOString()
+        };
+        
+        const batch = db.batch();
+        const orderRef = db.collection('orders').doc(orderId);
+        batch.set(orderRef, order);
+
+        cart.forEach(cartItem => {
+          const prodRef = db.collection('products').doc(cartItem.id);
+          batch.update(prodRef, {
+            availableQty: firebase.firestore.FieldValue.increment(-cartItem.cartQty)
+          });
+        });
+
+        batch.commit().then(() => {
+          showToast('Payment Successful! Order placed.', 'success');
+          localStorage.removeItem('handbuddyy_cart');
+          setTimeout(() => {
+            window.location.href = 'index.html';
+          }, 2000);
+        }).catch(err => {
+          showToast('Error processing order: ' + err.message, 'error');
+          btn.textContent = 'Pay Now Securely';
+          btn.style.opacity = '1';
+          btn.disabled = false;
+        });
+      }, 2000);
+    }
+  </script>
+</body>
+</html>
+

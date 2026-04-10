@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | HandBuddyy</title>
+  <link rel="stylesheet" href="./css/global.css">
+  <style>
+    .auth-container {
+      min-height: calc(100vh - 70px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-subtle);
+    }
+    
+    .auth-card {
+      width: 100%;
+      max-width: 400px;
+      padding: 40px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="container nav-container">
+      <a href="index.html" class="brand-logo">HandBuddyy</a>
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="shop.html" class="nav-link">Shop Bags</a></li>
+        <li><a href="cart.html" class="btn btn-primary" style="padding: 8px 16px">
+          Cart <span class="cart-badge" id="nav-cart-count">0</span>
+        </a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="auth-container">
+    <div class="card auth-card">
+      <h1 style="margin-bottom: 8px;">Welcome Back</h1>
+      <p style="color: var(--text-muted); margin-bottom: 32px;">Please enter your details to login.</p>
+      
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group" style="text-align: left;">
+          <label class="form-label">Mobile Number</label>
+          <input type="tel" id="mobile" class="form-input" placeholder="Enter your 10 digit number" required pattern="[0-9]{10}">
+        </div>
+        
+        <div class="form-group" style="text-align: left;">
+          <label class="form-label" style="display: flex; justify-content: space-between;">
+            <span>Password</span>
+            <a href="#" style="color: var(--accent-color); font-size: 0.875rem; font-weight: normal; text-decoration: none;">Forgot?</a>
+          </label>
+          <input type="password" id="password" class="form-input" placeholder="Enter your password" required>
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top: 24px;">Login to Account</button>
+      </form>
+      
+      <div style="margin-top: 24px;">
+        <p style="font-size: 0.875rem; color: var(--text-muted);">
+          Don't have an account? <a href="signup.html" style="color: var(--accent-color); font-weight: 600;">Sign up</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="./js/firebase-init.js"></script>
+  <script src="./js/main.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const params = new URLSearchParams(window.location.search);
+      const mobileParam = params.get('mobile');
+      if (mobileParam) {
+        document.getElementById('mobile').value = mobileParam;
+      }
+    });
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const mobile = document.getElementById('mobile').value;
+      const pass = document.getElementById('password').value;
+      
+      if(mobile && pass) {
+        const btn = document.querySelector('.btn-primary');
+        const oldText = btn.textContent;
+        btn.textContent = 'Logging in...';
+        btn.disabled = true;
+
+        db.collection('users').doc(mobile).get()
+          .then((doc) => {
+            if (doc.exists) {
+              const userData = doc.data();
+              if (userData.pass === pass) {
+                showToast('Login successful! Redirecting...', 'success');
+                localStorage.setItem('handbuddyy_user', mobile);
+                setTimeout(() => {
+                  window.location.href = 'index.html';
+                }, 1000);
+              } else {
+                showToast('Incorrect password entered.', 'error');
+                btn.textContent = oldText;
+                btn.disabled = false;
+              }
+            } else {
+              showToast('Account not found. Please sign up first.', 'error');
+              btn.textContent = oldText;
+              btn.disabled = false;
+            }
+          })
+          .catch((err) => {
+            showToast('Error: ' + err.message, 'error');
+            btn.textContent = oldText;
+            btn.disabled = false;
+          });
+      }
+    }
+  </script>
+</body>
+</html>
+

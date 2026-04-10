@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HandBuddyy | Premium Bags</title>
+  <link rel="stylesheet" href="./css/global.css">
+  <style>
+    /* Hero Section Specific */
+    .hero {
+      min-height: 80vh;
+      display: flex;
+      align-items: center;
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-content {
+      max-width: 600px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero-title {
+      font-size: 4rem;
+      margin-bottom: 24px;
+      letter-spacing: -1px;
+    }
+
+    .hero-subtitle {
+      font-size: 1.25rem;
+      color: var(--secondary-color);
+      margin-bottom: 40px;
+    }
+
+    .hero-img-container {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 50%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .hero-img {
+      max-width: 80%;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-xl);
+      animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+      100% { transform: translateY(0px); }
+    }
+
+    /* About Section */
+    .about-section {
+      background: var(--bg-card);
+      text-align: center;
+    }
+
+    .about-badge {
+      display: inline-block;
+      padding: 6px 16px;
+      background: rgba(15, 23, 42, 0.05);
+      color: var(--primary-color);
+      border-radius: var(--radius-pill);
+      font-weight: 600;
+      font-size: 0.875rem;
+      margin-bottom: 16px;
+    }
+
+    .about-title {
+      font-size: 2.5rem;
+      margin-bottom: 24px;
+    }
+
+    .about-text {
+      max-width: 700px;
+      margin: 0 auto 40px;
+      font-size: 1.125rem;
+      color: var(--secondary-color);
+    }
+    
+    .owner-tag {
+      font-weight: 600;
+      color: var(--accent-color);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="container nav-container">
+      <a href="index.html" class="brand-logo">HandBuddyy</a>
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link active">Home</a></li>
+        <li><a href="shop.html" class="nav-link">Shop Bags</a></li>
+        <li><a href="login.html" class="nav-link">Login</a></li>
+        <li>
+          <a href="cart.html" class="btn btn-primary" style="padding: 8px 16px">
+            Cart <span class="cart-badge" id="nav-cart-count">0</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <h1 class="hero-title">Carry Elegance, Everywhere.</h1>
+        <p class="hero-subtitle">Discover our premium collection of handcrafted tote bags and stylish sling bags designed for the modern lifestyle.</p>
+        <div style="display: flex; gap: 16px;">
+          <a href="shop.html" class="btn btn-accent">Explore Collection</a>
+          <a href="#about" class="btn btn-outline">Our Story</a>
+        </div>
+      </div>
+    </div>
+    <div class="hero-img-container">
+      <img src="./assets/tote_bag.png" alt="Premium Tote Bag" class="hero-img">
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about" class="section about-section">
+    <div class="container">
+      <span class="about-badge">About Us</span>
+      <h2 class="about-title">The HandBuddyy Vision</h2>
+      <p class="about-text">
+        At HandBuddyy, we believe that an accessory should be more than just an item—it should be a statement of elegance and utility. Founded by <span class="owner-tag">Kriya M Shah</span>, our mission is to deliver high-quality, aesthetically pleasing bags that complement your everyday journey.
+      </p>
+      <div class="grid-3" style="margin-top: 60px;">
+        <div class="card" style="padding: 32px;">
+          <h3>Premium Quality</h3>
+          <p style="margin-top: 12px; color: var(--text-muted);">Crafted with the finest materials to ensure durability and a luxurious feel.</p>
+        </div>
+        <div class="card" style="padding: 32px;">
+          <h3>Modern Design</h3>
+          <p style="margin-top: 12px; color: var(--text-muted);">Aesthetics that blend perfectly with contemporary fashion trends.</p>
+        </div>
+        <div class="card" style="padding: 32px;">
+          <h3>Ethically Made</h3>
+          <p style="margin-top: 12px; color: var(--text-muted);">Consciously produced supporting fair trade and sustainable practices.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer style="background: var(--primary-color); color: white; padding: 40px 0; text-align: center;">
+    <div class="container">
+      <h3 style="margin-bottom: 8px;">HandBuddyy</h3>
+      <p style="color: var(--text-muted);">&copy; 2026 HandBuddyy by Kriya M Shah. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="./js/firebase-init.js"></script>
+  <script src="./js/main.js"></script>
+</body>
+</html>
+

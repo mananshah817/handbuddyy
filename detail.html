@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Detail | HandBuddyy</title>
+  <link rel="stylesheet" href="./css/global.css">
+  <style>
+    .page-header {
+      background: var(--primary-color);
+      color: white;
+      padding: 40px 0;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="container nav-container">
+      <a href="index.html" class="brand-logo">HandBuddyy</a>
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="shop.html" class="nav-link">Shop Bags</a></li>
+        <li><a href="login.html" class="nav-link">Login</a></li>
+        <li>
+          <a href="cart.html" class="btn btn-primary" style="padding: 8px 16px">
+            Cart <span class="cart-badge" id="nav-cart-count">0</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="page-header">
+    <div class="container">
+      <h1 style="font-size: 2.5rem; margin-bottom: 12px;">Product Details</h1>
+      <p style="font-size: 1.125rem; opacity: 0.8;">Discover more about this item.</p>
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="container" id="detail-container">
+      <!-- Injected via main.js renderDetail() -->
+      <div style="text-align: center; padding: 60px;">
+        Loading product...
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer style="background: var(--primary-color); color: white; padding: 40px 0; text-align: center; margin-top: auto;">
+    <div class="container">
+      <h3 style="margin-bottom: 8px;">HandBuddyy</h3>
+      <p style="color: var(--text-muted);">&copy; 2026 HandBuddyy by Kriya M Shah. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="./js/firebase-init.js"></script>
+  <script src="./js/main.js"></script>
+</body>
+</html>

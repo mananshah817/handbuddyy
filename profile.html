@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Profile | HandBuddyy</title>
+  <link rel="stylesheet" href="./css/global.css">
+  <style>
+    .profile-container {
+      max-width: 600px;
+      margin: 40px auto;
+    }
+    
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+    
+    .avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: var(--accent-color);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="container nav-container">
+      <a href="index.html" class="brand-logo">HandBuddyy</a>
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="shop.html" class="nav-link">Shop Bags</a></li>
+        <li><a href="#" onclick="handleLogout()" class="nav-link" style="color: var(--accent-color);">Logout</a></li>
+        <li>
+          <a href="cart.html" class="btn btn-primary" style="padding: 8px 16px">
+            Cart <span class="cart-badge" id="nav-cart-count">0</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container profile-container">
+    <h1 style="margin-bottom: 32px;">My Account</h1>
+    
+    <div class="card" style="padding: 32px; margin-bottom: 32px;">
+      <div class="profile-header">
+        <div class="avatar" id="avatarLetter">U</div>
+        <div>
+          <h2 id="userName" style="margin-bottom: 8px;">User</h2>
+          <p style="color: var(--text-muted);" id="userMobile">+91</p>
+        </div>
+      </div>
+      
+      <hr style="border: none; border-top: 1px solid var(--border-color); margin: 32px 0;">
+      
+      <h3 style="margin-bottom: 24px;">Change Password</h3>
+      <form onsubmit="handleChangePassword(event)">
+        <div class="form-group">
+          <label class="form-label">Current Password</label>
+          <input type="password" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">New Password</label>
+          <input type="password" id="newPass" class="form-input" required>
+        </div>
+        <button type="submit" class="btn btn-accent">Update Password</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="./js/firebase-init.js"></script>
+  <script src="./js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const mobile = localStorage.getItem('handbuddyy_user');
+      if(mobile) {
+        document.getElementById('userMobile').textContent = `+91 ${mobile}`;
+        document.getElementById('avatarLetter').textContent = mobile.charAt(0);
+      } else {
+        window.location.href = 'login.html'; // Protect route
+      }
+    });
+
+    function handleChangePassword(e) {
+      e.preventDefault();
+      const newPass = document.getElementById('newPass').value;
+      if(newPass.length < 6) {
+        showToast('Password must be at least 6 characters', 'error');
+        return;
+      }
+      showToast('Password updated successfully!', 'success');
+      e.target.reset();
+    }
+    
+    function handleLogout() {
+      localStorage.removeItem('handbuddyy_user');
+      window.location.href = 'login.html';
+    }
+  </script>
+</body>
+</html>
+
