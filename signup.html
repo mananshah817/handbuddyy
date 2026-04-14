@@ -50,6 +50,11 @@
         </div>
 
         <div class="form-group" style="text-align: left;">
+          <label class="form-label">Email Address</label>
+          <input type="email" id="email" class="form-input" placeholder="Enter your email for verification" required>
+        </div>
+
+        <div class="form-group" style="text-align: left;">
           <label class="form-label">Mobile Number</label>
           <input type="tel" id="mobile" class="form-input" placeholder="Enter your 10 digit number" required pattern="[0-9]{10}">
         </div>
@@ -90,13 +95,45 @@
     </div>
   </div>
 
+  <!-- OTP Modal -->
+  <div id="otpModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="card" style="width: 100%; max-width: 380px; padding: 40px; text-align: center;">
+      <h2 style="margin-bottom: 12px;">Verify Email</h2>
+      <p style="color: var(--text-muted); margin-bottom: 24px;">We've sent a 6-digit code to <br><strong id="displayEmail"></strong></p>
+      
+      <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 24px;">
+        <input type="text" maxlength="6" id="otpInput" class="form-input" style="text-align: center; font-size: 1.5rem; letter-spacing: 8px; width: 100%;" placeholder="000000">
+      </div>
+      
+      <button onclick="verifyOTP()" class="btn btn-primary btn-block">Verify & Create Account</button>
+      <button onclick="closeOTPModal()" class="btn btn-outline btn-block" style="margin-top: 12px; border: none;">Cancel</button>
+      
+      <p style="margin-top: 24px; font-size: 0.875rem;">
+        Didn't receive it? <button onclick="resendOTP()" style="background: none; border: none; color: var(--accent-color); font-weight: 600; cursor: pointer;">Resend Code</button>
+      </p>
+    </div>
+  </div>
+
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="./js/firebase-init.js"></script>
   <script src="./js/main.js"></script>
   <script>
-    function handleSignup(e) {
+    (function() {
+      emailjs.init("Ol030iUQbs5hyA6-G");
+    })();
+
+    let currentOTP = '';
+    let pendingUserData = null;
+
+    function generateOTP() {
+      return Math.floor(100000 + Math.random() * 900000).toString();
+    }
+
+    async function handleSignup(e) {
       e.preventDefault();
+      const email = document.getElementById('email').value;
       const mobile = document.getElementById('mobile').value;
       const pass = document.getElementById('password').value;
       const fullname = document.getElementById('fullname').value;
@@ -105,42 +142,106 @@
       const city = document.getElementById('city').value.trim();
       const pin = document.getElementById('pincode').value.trim();
       
-      if(mobile && pass && fullname) {
-        const btn = document.querySelector('.btn-primary');
-        const oldText = btn.textContent;
-        btn.textContent = 'Creating...';
-        btn.disabled = true;
-
-        const userData = {
-          fullname: fullname,
-          pass: pass,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-
-        if (street || city || pin) {
-          userData.address = {
-            street: street || '',
-            city: city || '',
-            pin: pin || ''
-          };
+      if(email && mobile && pass && fullname) {
+        // Check if user already exists
+        const userCheck = await db.collection('users').doc(mobile).get();
+        if (userCheck.exists) {
+          showToast('An account with this mobile number already exists.', 'error');
+          return;
         }
 
-        db.collection('users').doc(mobile).set(userData).then(async () => {
-          // If address was provided, also add it to the user's addresses subcollection for checkout usage
+        const btn = document.querySelector('button[type="submit"]');
+        const oldText = btn.textContent;
+        btn.textContent = 'Sending Code...';
+        btn.disabled = true;
+
+        pendingUserData = {
+          email, mobile, pass, fullname, street, city, pin
+        };
+
+        await startVerification(email, btn, oldText);
+      }
+    }
+
+    async function startVerification(email, btn, oldText) {
+      currentOTP = generateOTP();
+      
+      const templateParams = {
+        to_email: email,
+        to_name: pendingUserData.fullname,
+        otp_code: currentOTP,
+        message: `Your HandBuddyy verification code is ${currentOTP}. Please enter this to complete your registration.`
+      };
+
+      try {
+        await emailjs.send("service_ib09jm9", "template_gid4u2d", templateParams);
+        
+        document.getElementById('displayEmail').textContent = email;
+        document.getElementById('otpModal').style.display = 'flex';
+        showToast('OTP sent successfully!');
+      } catch (error) {
+        console.error('EmailJS Error:', error);
+        showToast('Failed to send verification email. Please try again.', 'error');
+      } finally {
+        if (btn) {
+          btn.textContent = 'Sign Up';
+          btn.disabled = false;
+        }
+      }
+    }
+
+    async function verifyOTP() {
+      const enteredOTP = document.getElementById('otpInput').value;
+      if (enteredOTP === currentOTP) {
+        const modal = document.getElementById('otpModal');
+        const btn = modal.querySelector('.btn-primary');
+        btn.textContent = 'Verifying...';
+        btn.disabled = true;
+
+        try {
+          const { mobile, pass, fullname, street, city, pin, email } = pendingUserData;
+          
+          const userData = {
+            fullname: fullname,
+            email: email,
+            pass: pass,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            isVerified: true
+          };
+
           if (street || city || pin) {
-             const newAddr = { name: fullname, street: street || '', city: city || '', pin: pin || '' };
-             await db.collection('users').doc(mobile).collection('addresses').add(newAddr);
+            userData.address = { street: street || '', city: city || '', pin: pin || '' };
           }
-          showToast('Account created successfully! Please login.', 'success');
+
+          await db.collection('users').doc(mobile).set(userData);
+          
+          if (street || city || pin) {
+            const newAddr = { name: fullname, street: street || '', city: city || '', pin: pin || '' };
+            await db.collection('users').doc(mobile).collection('addresses').add(newAddr);
+          }
+
+          showToast('Account verified and created!', 'success');
           setTimeout(() => {
             window.location.href = `login.html?mobile=${mobile}`;
           }, 1500);
-        }).catch(err => {
-          showToast('Error: ' + err.message, 'error');
-          btn.textContent = oldText;
+        } catch (error) {
+          showToast('Error: ' + error.message, 'error');
+          btn.textContent = 'Verify & Create Account';
           btn.disabled = false;
-        });
+        }
+      } else {
+        showToast('Invalid OTP code. Please check and try again.', 'error');
       }
+    }
+
+    function resendOTP() {
+      if (pendingUserData) {
+        startVerification(pendingUserData.email);
+      }
+    }
+
+    function closeOTPModal() {
+      document.getElementById('otpModal').style.display = 'none';
     }
   </script>
 </body>

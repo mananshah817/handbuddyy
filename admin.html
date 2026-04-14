@@ -230,6 +230,8 @@
             <tr>
               <th>Phone Number</th>
               <th>Full Name</th>
+              <th>Email</th>
+              <th>Verified</th>
               <th>Address</th>
               <th>Password (Demo)</th>
             </tr>
@@ -442,10 +444,13 @@
 
       tbody.innerHTML = usersArray.map(([mobile, data]) => {
         const addrStr = data.address ? `${data.address.street}, ${data.address.city} - ${data.address.pin}` : '<span style="color:#999;font-style:italic;">Not provided</span>';
+        const isVerified = data.isVerified ? '<span style="color:#10b981; font-weight:600;">Yes</span>' : '<span style="color:#ef4444; font-weight:600;">No</span>';
         return `
         <tr>
           <td>${mobile}</td>
           <td>${data.fullname || 'N/A'}</td>
+          <td>${data.email || 'N/A'}</td>
+          <td>${isVerified}</td>
           <td style="font-size: 0.875rem;">${addrStr}</td>
           <td>${data.pass}</td>
         </tr>
