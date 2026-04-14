@@ -121,6 +121,7 @@
 
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="./js/firebase-init.js"></script>
   <script src="./js/main.js"></script>
@@ -200,16 +201,22 @@
       if (enteredOTP === currentOTP) {
         const modal = document.getElementById('otpModal');
         const btn = modal.querySelector('.btn-primary');
-        btn.textContent = 'Verifying...';
+        btn.textContent = 'Creating Account...';
         btn.disabled = true;
 
         try {
           const { mobile, pass, fullname, street, city, pin, email } = pendingUserData;
           
+          // 1. Create Firebase Auth User
+          const userCredential = await auth.createUserWithEmailAndPassword(email, pass);
+          const user = userCredential.user;
+
+          // 2. Save Additional Info to Firestore using UID
           const userData = {
+            uid: user.uid,
             fullname: fullname,
             email: email,
-            pass: pass,
+            mobile: mobile,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             isVerified: true
           };
@@ -218,18 +225,23 @@
             userData.address = { street: street || '', city: city || '', pin: pin || '' };
           }
 
-          await db.collection('users').doc(mobile).set(userData);
+          // We use UID as the Document ID for better security/linkage
+          await db.collection('users').doc(user.uid).set(userData);
           
+          // Legacy support: We also keep a mapping from mobile to UID for lookups if needed
+          await db.collection('mobile_to_uid').doc(mobile).set({ uid: user.uid });
+
           if (street || city || pin) {
             const newAddr = { name: fullname, street: street || '', city: city || '', pin: pin || '' };
-            await db.collection('users').doc(mobile).collection('addresses').add(newAddr);
+            await db.collection('users').doc(user.uid).collection('addresses').add(newAddr);
           }
 
           showToast('Account verified and created!', 'success');
           setTimeout(() => {
-            window.location.href = `login.html?mobile=${mobile}`;
+            window.location.href = `login.html`;
           }, 1500);
         } catch (error) {
+          console.error("Signup Error:", error);
           showToast('Error: ' + error.message, 'error');
           btn.textContent = 'Verify & Create Account';
           btn.disabled = false;

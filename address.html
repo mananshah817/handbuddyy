@@ -92,28 +92,23 @@
 
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="./js/firebase-init.js"></script>
   <script src="./js/main.js"></script>
   <script>
     let selectedAddressIndex = null;
     let addresses = [];
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const loggedInUser = localStorage.getItem('handbuddyy_user');
-      if (!loggedInUser) {
-        window.location.href = 'login.html';
-        return;
-      }
-      loadAddresses();
-    });
+    let addresses = [];
 
+    // Triggered by main.js
     function loadAddresses() {
-      const user = localStorage.getItem('handbuddyy_user');
+      if (!currentUser) return;
       
       const listEl = document.getElementById('address-list');
       listEl.innerHTML = '<p style="color: var(--text-muted);">Loading addresses...</p>';
 
-      db.collection('users').doc(user).collection('addresses').get()
+      db.collection('users').doc(currentUser.uid).collection('addresses').get()
         .then(snapshot => {
           addresses = snapshot.docs.map(doc => doc.data());
           
@@ -135,6 +130,17 @@
           listEl.innerHTML = '<p style="color: red;">Error loading addresses.</p>';
         });
     }
+
+    // Since main.js handles the initial auth check, we just wait for it to call us
+    // Or we check immediately if auth is already resolved
+    document.addEventListener('DOMContentLoaded', () => {
+      // Small delay to let main.js auth listener resolve
+      setTimeout(() => {
+        if (typeof currentUser !== 'undefined' && currentUser) {
+          loadAddresses();
+        }
+      }, 500);
+    });
 
     function selectAddress(idx) {
       selectedAddressIndex = idx;

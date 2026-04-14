@@ -65,10 +65,12 @@ function updateCartCount() {
   }
 }
 
+// Global user state
+let currentUser = null;
+let currentUserData = null;
+
 // Ensure the count is updated on all pages on load
 document.addEventListener('DOMContentLoaded', async () => {
-  const loggedInUser = localStorage.getItem('handbuddyy_user');
-  
   // Mobile Menu Logic
   const menuBtn = document.getElementById('mobile-menu-btn');
   const navLinks = document.getElementById('nav-links');
@@ -78,14 +80,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       navLinks.classList.toggle('active');
     });
 
-    // Close menu when clicking a link
     navLinks.querySelectorAll('a').forEach(link => {
-      link.addEventListener('click', () => {
-        navLinks.classList.remove('active');
-      });
+      link.addEventListener('click', () => navLinks.classList.remove('active'));
     });
 
-    // Close menu when clicking outside
     document.addEventListener('click', (e) => {
       if (!navLinks.contains(e.target) && !menuBtn.contains(e.target)) {
         navLinks.classList.remove('active');
@@ -93,41 +91,85 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  if (!loggedInUser) {
-    // Hide cart links across the website
-    const cartLinks = document.querySelectorAll('a[href="cart.html"]');
-    cartLinks.forEach(link => {
-      link.style.display = 'none';
-      if (link.parentElement && link.parentElement.tagName === 'LI') {
-        link.parentElement.style.display = 'none';
+  // Firebase Auth State Listener
+  auth.onAuthStateChanged(async (user) => {
+    currentUser = user;
+    
+    if (user) {
+      // User is logged in
+      try {
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        if (userDoc.exists) {
+          currentUserData = userDoc.data();
+          
+          // Show Dashboard link for admins
+          if (currentUserData.role === 'admin' && !document.getElementById('nav-admin-link')) {
+            const adminLi = document.createElement('li');
+            adminLi.id = 'nav-admin-link';
+            adminLi.innerHTML = `<a href="admin.html" class="nav-link" style="color: var(--accent-color); font-weight: 600;">Dashboard</a>`;
+            const navUl = document.getElementById('nav-links');
+            if (navUl) navUl.insertBefore(adminLi, navUl.firstChild);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching user data:", err);
       }
-    });
 
-    // If somehow on cart page without login, redirect to login
-    if (window.location.pathname.includes('cart.html')) {
-      window.location.href = 'login.html';
-      return;
+      // Update UI for logged in state
+      const loginLinks = document.querySelectorAll('a[href="login.html"]');
+      loginLinks.forEach(link => {
+        link.textContent = 'Logout';
+        link.href = '#';
+        link.onclick = (e) => {
+          e.preventDefault();
+          auth.signOut().then(() => {
+            window.location.href = 'index.html';
+          });
+        };
+      });
+
+      // Show profile link if user is logged in
+      if (!document.getElementById('nav-profile-link')) {
+        const profileLi = document.createElement('li');
+        profileLi.id = 'nav-profile-link';
+        profileLi.innerHTML = `<a href="profile.html" class="nav-link">Profile</a>`;
+        const navUl = document.getElementById('nav-links');
+        if (navUl) {
+           const loginLi = Array.from(navUl.children).find(li => li.querySelector('a[href="#"]'));
+           navUl.insertBefore(profileLi, loginLi);
+        }
+      }
+
+    } else {
+      // User is logged out
+      currentUserData = null;
+      
+      // Hide cart and private features
+      const cartLinks = document.querySelectorAll('a[href="cart.html"]');
+      cartLinks.forEach(link => {
+        link.style.display = 'none';
+        if (link.parentElement && link.parentElement.tagName === 'LI') {
+          link.parentElement.style.display = 'none';
+        }
+      });
+
+      // Redirect if on protected page
+      const protectedPages = ['cart.html', 'address.html', 'checkout.html', 'profile.html', 'admin.html'];
+      if (protectedPages.some(page => window.location.pathname.includes(page))) {
+        window.location.href = 'login.html';
+        return;
+      }
     }
-  } else {
-    // Change Login to Logout
-    const loginLinks = document.querySelectorAll('a[href="login.html"]');
-    loginLinks.forEach(link => {
-      link.textContent = 'Logout';
-      link.href = '#';
-      link.onclick = (e) => {
-        e.preventDefault();
-        localStorage.removeItem('handbuddyy_user');
-        localStorage.removeItem('handbuddyy_selected_address');
-        window.location.href = 'index.html';
-      };
-    });
-  }
+    
+    // Refresh page specific content after auth is resolved
+    if (window.location.pathname.includes('shop.html')) renderShop();
+    if (window.location.pathname.includes('cart.html')) renderCart();
+    if (window.location.pathname.includes('detail.html')) renderDetail();
+    if (window.location.pathname.includes('profile.html')) typeof renderProfile === 'function' && renderProfile();
+  });
 
   await initProducts();
   updateCartCount();
-  if (window.location.pathname.includes('shop.html')) renderShop();
-  if (window.location.pathname.includes('cart.html')) renderCart();
-  if (window.location.pathname.includes('detail.html')) renderDetail();
 });
 
 // Save cart to local storage

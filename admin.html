@@ -415,6 +415,7 @@
 
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="./js/firebase-init.js"></script>
   <script>
     // Tab Switching Logic
@@ -436,7 +437,15 @@
     let ordersData = [];
     let productsData = [];
 
-    document.addEventListener('DOMContentLoaded', async () => {
+    // This replaces the old DOMContentLoaded listener
+    // We wait for main.js to resolve the auth state
+    async function initAdminPanel() {
+      // Security check: If not admin, main.js will redirect. 
+      // But we double check here before fetching sensitive data.
+      if (!currentUser || !currentUserData || currentUserData.role !== 'admin') {
+        return; 
+      }
+
       try {
         const [uSnap, oSnap, pSnap] = await Promise.all([
           db.collection('users').get(),
@@ -444,6 +453,7 @@
           db.collection('products').get()
         ]);
         
+        usersData = {}; // reset
         uSnap.forEach(doc => usersData[doc.id] = doc.data());
         ordersData = oSnap.docs.map(doc => doc.data());
         productsData = pSnap.docs.map(doc => doc.data());
@@ -454,13 +464,27 @@
         renderInventory();
       } catch (err) {
         console.error("Firebase error", err);
-        alert("Error connecting to Firebase Database.");
+        showToast("Error loading admin data: " + err.message, "error");
       }
+    }
+
+    // Since main.js handles auth, we wait for it to be ready
+    document.addEventListener('DOMContentLoaded', () => {
+      const checkAuthInterval = setInterval(() => {
+        if (typeof currentUser !== 'undefined') {
+          clearInterval(checkAuthInterval);
+          if (currentUser && currentUserData && currentUserData.role === 'admin') {
+            initAdminPanel();
+          } else {
+            // main.js usually handles redirect, but just in case
+            window.location.href = 'index.html';
+          }
+        }
+      }, 500);
     });
 
     function renderDashboard() {
-      // Calculate totals
-      const totalRev = ordersData.reduce((sum, o) => sum + o.total, 0);
+      const totalRev = ordersData.reduce((sum, o) => sum + (o.total || 0), 0);
       document.getElementById('stat-revenue').textContent = formatPrice(totalRev);
       document.getElementById('stat-orders').textContent = ordersData.length;
       document.getElementById('stat-users').textContent = Object.keys(usersData).length;
@@ -476,7 +500,7 @@
       tbody.innerHTML = recent.map(o => `
         <tr>
           <td><strong style="color: var(--primary-color)">${o.id}</strong></td>
-          <td>${o.user}</td>
+          <td>${o.userMobile || 'User'}</td>
           <td>${new Date(o.date).toLocaleDateString()}</td>
           <td>${formatPrice(o.total)}</td>
         </tr>
@@ -488,21 +512,21 @@
       const usersArray = Object.entries(usersData);
       
       if(usersArray.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#666;">No users registered yet.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#666;">No users registered yet.</td></tr>';
         return;
       }
 
-      tbody.innerHTML = usersArray.map(([mobile, data]) => {
+      tbody.innerHTML = usersArray.map(([id, data]) => {
         const addrStr = data.address ? `${data.address.street}, ${data.address.city} - ${data.address.pin}` : '<span style="color:#999;font-style:italic;">Not provided</span>';
         const isVerified = data.isVerified ? '<span style="color:#10b981; font-weight:600;">Yes</span>' : '<span style="color:#ef4444; font-weight:600;">No</span>';
         return `
         <tr>
-          <td>${mobile}</td>
+          <td>${data.mobile || 'N/A'}</td>
           <td>${data.fullname || 'N/A'}</td>
           <td>${data.email || 'N/A'}</td>
           <td>${isVerified}</td>
           <td style="font-size: 0.875rem;">${addrStr}</td>
-          <td>${data.pass}</td>
+          <td style="color:#999; font-size: 0.75rem;">(Protected)</td>
         </tr>
       `}).join('');
     }
@@ -517,27 +541,25 @@
         filtered = filtered.filter(o => new Date(o.date).getFullYear().toString() === yFilter);
       }
       if (mFilter !== 'all') {
-        // Javascript getMonth() is 0-indexed.
         filtered = filtered.filter(o => (new Date(o.date).getMonth() + 1).toString() === mFilter);
       }
       
-      const filteredTotal = filtered.reduce((sum, o) => sum + o.total, 0);
+      const filteredTotal = filtered.reduce((sum, o) => sum + (o.total || 0), 0);
       document.getElementById('filtered-sales-total').textContent = formatPrice(filteredTotal);
 
       const tbody = document.querySelector('#sales-table tbody');
       if(filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#666;">No orders found for this period.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#666;">No orders found for this period.</td></tr>';
         return;
       }
 
-      // Sort newest first
       filtered.sort((a,b) => new Date(b.date) - new Date(a.date));
 
       tbody.innerHTML = filtered.map(o => `
         <tr>
           <td>${new Date(o.date).toLocaleString()}</td>
           <td><strong>${o.id}</strong></td>
-          <td>${o.user}</td>
+          <td>${o.userMobile || 'N/A'}</td>
           <td style="font-size: 0.875rem; color: #444;">${o.address ? `${o.address.street},<br>${o.address.city} - ${o.address.pin}` : 'N/A'}</td>
           <td>${o.items.map(i => `${i.cartQty}x ${i.name}`).join(', ')}</td>
           <td style="font-weight: 600;">${formatPrice(o.total)}</td>
