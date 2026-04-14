@@ -170,24 +170,39 @@
     }
 
     async function startVerification(email, btn, oldText) {
+      if (!email) {
+        showToast('Email address is missing.', 'error');
+        return;
+      }
+      
       currentOTP = generateOTP();
       
       const templateParams = {
-        to_email: email,
+        to_email: email, // Ensure this matches {{to_email}} in your EmailJS template
+        user_email: email, // Often a common fallback
         to_name: pendingUserData.fullname,
         otp_code: currentOTP,
         message: `Your HandBuddyy verification code is ${currentOTP}. Please enter this to complete your registration.`
       };
 
+      console.log('Sending OTP with parameters:', templateParams);
+
       try {
-        await emailjs.send("service_ib09jm9", "template_gid4u2d", templateParams);
+        const response = await emailjs.send("service_ib09jm9", "template_gid4u2d", templateParams);
+        console.log('EmailJS Success:', response.status, response.text);
         
         document.getElementById('displayEmail').textContent = email;
         document.getElementById('otpModal').style.display = 'flex';
         showToast('OTP sent successfully!');
       } catch (error) {
-        console.error('EmailJS Error:', error);
-        showToast('Failed to send verification email. Please try again.', 'error');
+        console.error('EmailJS Error Object:', error);
+        
+        let errorMsg = 'Failed to send verification email.';
+        if (error.text === 'The recipients address is empty') {
+          errorMsg = 'EmailJS Error: Please ensure your template "To Email" field contains {{to_email}}';
+        }
+        
+        showToast(errorMsg, 'error');
       } finally {
         if (btn) {
           btn.textContent = 'Sign Up';
