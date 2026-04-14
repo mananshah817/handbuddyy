@@ -69,6 +69,30 @@ function updateCartCount() {
 document.addEventListener('DOMContentLoaded', async () => {
   const loggedInUser = localStorage.getItem('handbuddyy_user');
   
+  // Mobile Menu Logic
+  const menuBtn = document.getElementById('mobile-menu-btn');
+  const navLinks = document.getElementById('nav-links');
+  
+  if (menuBtn && navLinks) {
+    menuBtn.addEventListener('click', () => {
+      navLinks.classList.toggle('active');
+    });
+
+    // Close menu when clicking a link
+    navLinks.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        navLinks.classList.remove('active');
+      });
+    });
+
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!navLinks.contains(e.target) && !menuBtn.contains(e.target)) {
+        navLinks.classList.remove('active');
+      }
+    });
+  }
+
   if (!loggedInUser) {
     // Hide cart links across the website
     const cartLinks = document.querySelectorAll('a[href="cart.html"]');
@@ -237,7 +261,7 @@ function renderDetail() {
   const isOutOfStock = product.availableQty === 0 || cartQty >= product.availableQty;
 
   container.innerHTML = `
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px;">
+    <div class="grid-2" style="margin-top: 40px;">
       <div style="background: var(--bg-subtle); padding: 40px; border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
         <img src="${product.image}" alt="${product.name}" style="max-width: 100%; max-height: 500px; object-fit: contain; border-radius: var(--radius-md);">
       </div>

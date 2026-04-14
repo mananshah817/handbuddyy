@@ -140,6 +140,48 @@
       align-items: center;
       justify-content: center;
       z-index: 1000;
+      padding: 20px;
+    }
+
+    /* Mobile Responsive Panel */
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column;
+      }
+      .sidebar {
+        width: 100%;
+        padding: 10px 0;
+        flex-direction: row;
+        overflow-x: auto;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      .sidebar h2 {
+        display: none;
+      }
+      .sidebar-link {
+        padding: 10px 15px;
+        white-space: nowrap;
+        border-left: none;
+        border-bottom: 3px solid transparent;
+      }
+      .sidebar-link.active {
+        border-left-color: transparent;
+        border-bottom-color: var(--accent-color);
+      }
+      .main-content {
+        padding: 20px 10px;
+      }
+      .stat-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
     }
     .modal-overlay.active {
       display: flex;
@@ -205,19 +247,21 @@
       
       <div class="admin-card">
         <h3>Recent Orders</h3>
-        <table id="recent-orders-table">
-          <thead>
-            <tr>
-              <th>Order ID</th>
-              <th>Customer</th>
-              <th>Date</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- via js -->
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table id="recent-orders-table">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Date</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- via js -->
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -225,21 +269,23 @@
     <div id="users" class="panel">
       <h1 style="margin-bottom: 24px;">Registered Users</h1>
       <div class="admin-card">
-        <table id="users-table">
-          <thead>
-            <tr>
-              <th>Phone Number</th>
-              <th>Full Name</th>
-              <th>Email</th>
-              <th>Verified</th>
-              <th>Address</th>
-              <th>Password (Demo)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- via js -->
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table id="users-table">
+            <thead>
+              <tr>
+                <th>Phone Number</th>
+                <th>Full Name</th>
+                <th>Email</th>
+                <th>Verified</th>
+                <th>Address</th>
+                <th>Password (Demo)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- via js -->
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -275,21 +321,23 @@
         <div style="margin-bottom: 16px; font-weight: 600;">
           Filtered Total: <span style="color: var(--accent-color); font-size: 1.25rem;" id="filtered-sales-total">₹0</span>
         </div>
-        <table id="sales-table">
-          <thead>
-            <tr>
-              <th>Date/Time</th>
-              <th>Order ID</th>
-              <th>Customer</th>
-              <th>Delivery Address</th>
-              <th>Items</th>
-              <th>Sale Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- via js -->
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table id="sales-table">
+            <thead>
+              <tr>
+                <th>Date/Time</th>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Delivery Address</th>
+                <th>Items</th>
+                <th>Sale Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- via js -->
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -300,20 +348,22 @@
         <button class="btn btn-primary" onclick="showProductModal()">+ Add New Product</button>
       </div>
       <div class="admin-card">
-        <table id="inventory-table">
-          <thead>
-            <tr>
-              <th>Image</th>
-              <th>Product Name</th>
-              <th>Price</th>
-              <th>Stock Available</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- via js -->
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table id="inventory-table">
+            <thead>
+              <tr>
+                <th>Image</th>
+                <th>Product Name</th>
+                <th>Price</th>
+                <th>Stock Available</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- via js -->
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 

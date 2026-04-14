@@ -14,83 +14,60 @@
       background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
       position: relative;
       overflow: hidden;
+      padding: 60px 0;
+    }
+
+    .hero-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 40px;
     }
 
     .hero-content {
       max-width: 600px;
-      position: relative;
       z-index: 2;
     }
 
-    .hero-title {
-      font-size: 4rem;
-      margin-bottom: 24px;
-      letter-spacing: -1px;
-    }
-
-    .hero-subtitle {
-      font-size: 1.25rem;
-      color: var(--secondary-color);
-      margin-bottom: 40px;
-    }
-
     .hero-img-container {
-      position: absolute;
-      right: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 50%;
-      height: 100%;
+      flex: 1;
       display: flex;
       justify-content: center;
       align-items: center;
+      width: 100%;
     }
 
     .hero-img {
-      max-width: 80%;
+      max-width: 100%;
+      height: auto;
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow-xl);
       animation: float 6s ease-in-out infinite;
+    }
+
+    @media (max-width: 768px) {
+      .hero {
+        min-height: 0;
+        text-align: center;
+      }
+      .hero-container {
+        flex-direction: column;
+      }
+      .hero-content {
+        order: 2;
+      }
+      .hero-img-container {
+        order: 1;
+      }
+      .hero-img {
+        max-width: 80%;
+      }
     }
 
     @keyframes float {
       0% { transform: translateY(0px); }
       50% { transform: translateY(-20px); }
       100% { transform: translateY(0px); }
-    }
-
-    /* About Section */
-    .about-section {
-      background: var(--bg-card);
-      text-align: center;
-    }
-
-    .about-badge {
-      display: inline-block;
-      padding: 6px 16px;
-      background: rgba(15, 23, 42, 0.05);
-      color: var(--primary-color);
-      border-radius: var(--radius-pill);
-      font-weight: 600;
-      font-size: 0.875rem;
-      margin-bottom: 16px;
-    }
-
-    .about-title {
-      font-size: 2.5rem;
-      margin-bottom: 24px;
-    }
-
-    .about-text {
-      max-width: 700px;
-      margin: 0 auto 40px;
-      font-size: 1.125rem;
-      color: var(--secondary-color);
-    }
-    
-    .owner-tag {
-      font-weight: 600;
-      color: var(--accent-color);
     }
   </style>
 </head>
@@ -100,7 +77,12 @@
   <nav class="navbar">
     <div class="container nav-container">
       <a href="index.html" class="brand-logo">HandBuddyy</a>
-      <ul class="nav-links">
+      
+      <button class="menu-toggle" id="mobile-menu-btn" aria-label="Toggle Menu">
+        &#9776;
+      </button>
+
+      <ul class="nav-links" id="nav-links">
         <li><a href="index.html" class="nav-link active">Home</a></li>
         <li><a href="shop.html" class="nav-link">Shop Bags</a></li>
         <li><a href="login.html" class="nav-link">Login</a></li>
@@ -115,18 +97,18 @@
 
   <!-- Hero Section -->
   <section class="hero">
-    <div class="container">
+    <div class="container hero-container">
       <div class="hero-content">
         <h1 class="hero-title">Carry Elegance, Everywhere.</h1>
         <p class="hero-subtitle">Discover our premium collection of handcrafted tote bags and stylish sling bags designed for the modern lifestyle.</p>
-        <div style="display: flex; gap: 16px;">
+        <div style="display: flex; gap: 16px; justify-content: inherit;">
           <a href="shop.html" class="btn btn-accent">Explore Collection</a>
           <a href="#about" class="btn btn-outline">Our Story</a>
         </div>
       </div>
-    </div>
-    <div class="hero-img-container">
-      <img src="./assets/tote_bag.png" alt="Premium Tote Bag" class="hero-img">
+      <div class="hero-img-container">
+        <img src="./assets/tote_bag.png" alt="Premium Tote Bag" class="hero-img">
+      </div>
     </div>
   </section>
 
