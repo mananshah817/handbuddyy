@@ -21,7 +21,7 @@ HandBuddyy is a modern, handcrafted e-commerce platform for premium tote and sli
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/mananshah817-commits/handbuddyy.git
+   git clone https://github.com/mananshah817/handbuddyy.git
    ```
 
 2. **Open the project**:
