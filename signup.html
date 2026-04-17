@@ -103,8 +103,8 @@
   <!-- OTP Modal -->
   <div id="otpModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
     <div class="card" style="width: 100%; max-width: 380px; padding: 40px; text-align: center;">
-      <h2 style="margin-bottom: 12px;">Verify Email</h2>
-      <p style="color: var(--text-muted); margin-bottom: 24px;">We've sent a 6-digit code to <br><strong id="displayEmail"></strong></p>
+      <h2 style="margin-bottom: 12px;">Verify Mobile</h2>
+      <p style="color: var(--text-muted); margin-bottom: 24px;">We've sent a 6-digit SMS code to <br><strong id="displayEmail"></strong></p>
       
       <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 24px;">
         <input type="text" maxlength="6" id="otpInput" class="form-input" style="text-align: center; font-size: 1.5rem; letter-spacing: 8px; width: 100%;" placeholder="000000">
@@ -122,88 +122,80 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="./js/firebase-init.js"></script>
   <script src="./js/main.js"></script>
+  <!-- reCAPTCHA Container for Phone Auth -->
+  <div id="recaptcha-container"></div>
   <script>
-    (function() {
-      emailjs.init("Ol030iUQbs5hyA6-G");
-    })();
+    let confirmationResult = null;
 
     let currentOTP = '';
     let pendingUserData = null;
 
-    function generateOTP() {
-      return Math.floor(100000 + Math.random() * 900000).toString();
-    }
+    window.onload = function() {
+      // Initialize Invisible reCAPTCHA
+      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+        'size': 'invisible',
+        'callback': (response) => {
+          // reCAPTCHA solved
+        }
+      });
+    };
+
+    let pendingUserData = null;
+    let confirmationResult = null;
 
     async function handleSignup(e) {
       e.preventDefault();
-      const email = document.getElementById('email').value;
-      const mobile = document.getElementById('mobile').value;
+      const email = document.getElementById('email').value.trim();
+      const mobile = document.getElementById('mobile').value.trim();
       const pass = document.getElementById('password').value;
-      const fullname = document.getElementById('fullname').value;
+      const fullname = document.getElementById('fullname').value.trim();
       
       const street = document.getElementById('street').value.trim();
       const city = document.getElementById('city').value.trim();
       const pin = document.getElementById('pincode').value.trim();
       
       if(email && mobile && pass && fullname) {
-        // Check if user already exists
-        const userCheck = await db.collection('users').doc(mobile).get();
-        if (userCheck.exists) {
-          showToast('An account with this mobile number already exists.', 'error');
+        // 1. Basic format check for mobile (must be 10 digits for India)
+        if (!/^[0-9]{10}$/.test(mobile)) {
+          showToast('Please enter a valid 10-digit mobile number.', 'error');
           return;
         }
 
         const btn = document.querySelector('button[type="submit"]');
         const oldText = btn.textContent;
-        btn.textContent = 'Sending Code...';
+        btn.textContent = 'Preparing SMS...';
         btn.disabled = true;
 
         pendingUserData = {
           email, mobile, pass, fullname, street, city, pin
         };
 
-        await startVerification(email, btn, oldText);
+        // Format to E.164 (+91 for India)
+        const formattedMobile = '+91' + mobile;
+        await startVerification(formattedMobile, btn, oldText);
       }
     }
 
-    async function startVerification(email, btn, oldText) {
-      if (!email) {
-        showToast('Email address is missing.', 'error');
-        return;
-      }
+    async function startVerification(phoneNumber, btn, oldText) {
+      console.log('Starting verification for:', phoneNumber);
       
-      currentOTP = generateOTP();
-      
-      const templateParams = {
-        to_email: email, // Ensure this matches {{to_email}} in your EmailJS template
-        user_email: email, // Often a common fallback
-        to_name: pendingUserData.fullname,
-        otp_code: currentOTP,
-        message: `Your HandBuddyy verification code is ${currentOTP}. Please enter this to complete your registration.`
-      };
-
-      console.log('Sending OTP with parameters:', templateParams);
-
       try {
-        const response = await emailjs.send("service_ib09jm9", "template_gid4u2d", templateParams);
-        console.log('EmailJS Success:', response.status, response.text);
+        const appVerifier = window.recaptchaVerifier;
+        confirmationResult = await auth.signInWithPhoneNumber(phoneNumber, appVerifier);
         
-        document.getElementById('displayEmail').textContent = email;
+        console.log('SMS sent successfully');
+        document.getElementById('displayEmail').textContent = phoneNumber;
         document.getElementById('otpModal').style.display = 'flex';
-        showToast('OTP sent successfully!');
+        showToast('Verification code sent to your mobile!');
       } catch (error) {
-        console.error('EmailJS Error Object:', error);
-        
-        let errorMsg = 'Failed to send verification email.';
-        if (error.text === 'The recipients address is empty') {
-          errorMsg = 'EmailJS Error: Please ensure your template "To Email" field contains {{to_email}}';
-        }
+        console.error('Phone Auth Error:', error);
+        let errorMsg = 'Failed to send SMS. Please try again.';
+        if (error.code === 'auth/invalid-phone-number') errorMsg = 'Invalid phone number format.';
+        if (error.code === 'auth/too-many-requests') errorMsg = 'Too many requests. Try again later.';
         
         showToast(errorMsg, 'error');
-      } finally {
         if (btn) {
           btn.textContent = 'Sign Up';
           btn.disabled = false;
@@ -212,68 +204,91 @@
     }
 
     async function verifyOTP() {
-      const enteredOTP = document.getElementById('otpInput').value;
-      if (enteredOTP === currentOTP) {
-        const modal = document.getElementById('otpModal');
-        const btn = modal.querySelector('.btn-primary');
-        btn.textContent = 'Creating Account...';
-        btn.disabled = true;
+      const code = document.getElementById('otpInput').value;
+      if (!code || code.length < 6) {
+        showToast('Please enter the 6-digit code.', 'error');
+        return;
+      }
 
+      const modal = document.getElementById('otpModal');
+      const btn = modal.querySelector('.btn-primary');
+      const oldText = btn.textContent;
+      btn.textContent = 'Verifying...';
+      btn.disabled = true;
+
+      try {
+        // 1. Confirm OTP
+        const result = await confirmationResult.confirm(code);
+        const user = result.user;
+        console.log('Phone verified. User signed in:', user.uid);
+
+        btn.textContent = 'Linking Account...';
+
+        const { email, pass, fullname, street, city, pin } = pendingUserData;
+
+        // 2. Link with Email/Password
+        const credential = firebase.auth.EmailAuthProvider.credential(email, pass);
+        
         try {
-          const { mobile, pass, fullname, street, city, pin, email } = pendingUserData;
-          
-          // 1. Create Firebase Auth User
-          const userCredential = await auth.createUserWithEmailAndPassword(email, pass);
-          const user = userCredential.user;
-
-          // 2. Save Additional Info to Firestore using UID
-          const userData = {
-            uid: user.uid,
-            fullname: fullname,
-            email: email,
-            mobile: mobile,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            isVerified: true
-          };
-
-          if (street || city || pin) {
-            userData.address = { street: street || '', city: city || '', pin: pin || '' };
+          await user.linkWithCredential(credential);
+          console.log('Email linked successfully');
+        } catch (linkError) {
+          console.error('Linking error:', linkError);
+          if (linkError.code === 'auth/email-already-in-use') {
+            showToast('This email is already associated with another account.', 'error');
+            // We might want to handle this better, but for now we stop.
+            btn.textContent = oldText;
+            btn.disabled = false;
+            return;
           }
-
-          // We use UID as the Document ID for better security/linkage
-          await db.collection('users').doc(user.uid).set(userData);
-          
-          // Legacy support: We also keep a mapping from mobile to UID for lookups if needed
-          await db.collection('mobile_to_uid').doc(mobile).set({ uid: user.uid });
-
-          if (street || city || pin) {
-            const newAddr = { name: fullname, street: street || '', city: city || '', pin: pin || '' };
-            await db.collection('users').doc(user.uid).collection('addresses').add(newAddr);
-          }
-
-          showToast('Account verified and created!', 'success');
-          setTimeout(() => {
-            window.location.href = `login.html`;
-          }, 1500);
-        } catch (error) {
-          console.error("Signup Error:", error);
-          showToast('Error: ' + error.message, 'error');
-          btn.textContent = 'Verify & Create Account';
-          btn.disabled = false;
+          throw linkError;
         }
-      } else {
-        showToast('Invalid OTP code. Please check and try again.', 'error');
+
+        // 3. Save to Firestore
+        const userData = {
+          uid: user.uid,
+          fullname: fullname,
+          email: email,
+          mobile: pendingUserData.mobile,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          isVerified: true
+        };
+
+        if (street || city || pin) {
+          userData.address = { street: street || '', city: city || '', pin: pin || '' };
+        }
+
+        await db.collection('users').doc(user.uid).set(userData);
+        await db.collection('mobile_to_uid').doc(pendingUserData.mobile).set({ uid: user.uid });
+
+        if (street || city || pin) {
+          const newAddr = { name: fullname, street: street || '', city: city || '', pin: pin || '' };
+          await db.collection('users').doc(user.uid).collection('addresses').add(newAddr);
+        }
+
+        showToast('Account created successfully!', 'success');
+        setTimeout(() => {
+          window.location.href = 'index.html'; // Already signed in
+        }, 1500);
+
+      } catch (error) {
+        console.error("Verification Error:", error);
+        showToast('Invalid code or verification failed.', 'error');
+        btn.textContent = 'Verify & Create Account';
+        btn.disabled = false;
       }
     }
 
     function resendOTP() {
       if (pendingUserData) {
-        startVerification(pendingUserData.email);
+        const formattedMobile = '+91' + pendingUserData.mobile;
+        startVerification(formattedMobile);
       }
     }
 
     function closeOTPModal() {
       document.getElementById('otpModal').style.display = 'none';
+      // Refresh page if needed to reset recaptcha
     }
   </script>
 </body>
